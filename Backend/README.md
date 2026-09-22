@@ -50,7 +50,7 @@ Travel_Assistant/
 
 - 地址：`jdbc:mysql://localhost:3306/travel_assistant`
 - 用户名：`root`
-- 密码：`123456`
+- 密码：**无内置默认值**，需自行提供（见下方两种方式）
 
 > 数据库 `travel_assistant` **无需手动创建**，连接串带有 `createDatabaseIfNotExist=true`，
 > 首次启动会自动建库；表结构由 JPA 自动创建；商品与地图路线等种子数据由
@@ -79,10 +79,11 @@ travel.llm.api-key=sk-你的DeepSeekKey
 | `MYSQL_PORT` | `3306` | 端口 |
 | `MYSQL_DB` | `travel_assistant` | 库名 |
 | `MYSQL_USER` | `root` | 用户名 |
-| `MYSQL_PASSWORD` | `123456` | 密码 |
+| `MYSQL_PASSWORD` | 无（需自行提供） | 密码，出于安全不再内置默认值 |
 
-> PowerShell 里不要用 `$env:X=''` 来传空密码——空值的环境变量会被直接丢弃，配置仍会回退到默认值；
-> 真需要空密码时用 `$env:SPRING_APPLICATION_JSON='{"spring":{"datasource":{"password":""}}}'` 覆盖。
+> 密码不再内置默认值，必须显式提供；PowerShell 里不要用 `$env:X=''` 传值——
+> 空值的环境变量会被直接丢弃、等同于未设置；确需空密码（数据库账号本就无密码）时，
+> 用 `$env:SPRING_APPLICATION_JSON='{"spring":{"datasource":{"password":""}}}'` 覆盖。
 
 ### 2. 配置大模型密钥（重要，已改为 **DeepSeek**）
 后端代理两类对话（见 `application.yml` 的 `travel.llm`），默认均调 **DeepSeek**（OpenAI 兼容接口）：
