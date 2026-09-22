@@ -19,7 +19,8 @@ logs/
 *.log
 
 # 本机专用配置（含数据库密码 / 大模型 Key，绝不提交）
-config/
+# 用根锚定，只忽略 Backend/config/，不影响 src/.../config/ 这个 Java 包
+/config/
 
 # 跨端编辑用的中转目录（临时，勿提交）
 .fe_staging/
