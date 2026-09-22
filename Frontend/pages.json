@@ -1,0 +1,152 @@
+{
+	"pages": [ 
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/guide/guide",
+			"style" : 
+			{
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/user/user",
+			"style" : 
+			{
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/order/order",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/map-test/map-test",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/chat/chat",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/settings/settings",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/aboutus/aboutus",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/profile/profile",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/preference/preference",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/help/help",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/privacy/privacy",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/share/share",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/huiyuankefu/huiyuankefu",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/lvxingxiangce/lvxingxiangce",
+			"style" : 
+			{
+				"navigationBarTitleText" : "lvxingxiangce",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/shopping/shopping",
+			"style" : 
+			{
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"uniIdRouter": {},
+	"tabBar": {
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "/static/tabbar/home.png",
+				"selectedIconPath": "/static/tabbar/home-selected.png",
+				"text": "首页"
+			},{
+				"pagePath": "pages/guide/guide",
+				"iconPath": "/static/tabbar/search.png",
+				"selectedIconPath": "/static/tabbar/search-selected.png",
+				"text": "精品购物"
+			},{
+				"pagePath": "pages/user/user",
+				"iconPath": "/static/tabbar/user.png",
+				"selectedIconPath": "/static/tabbar/user-selected.png",
+				"text": "我的"
+			}
+		],
+		"color": "#000000",
+		"selectedColor": "#349BFF",
+		"borderStyle": "white",
+		"iconWidth": "10px",
+		"spacing": "8px"
+	}
+}

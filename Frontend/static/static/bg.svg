@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1071" height="1080" viewBox="0 0 1071 1080" fill="none">
+<path d="M371.287 209.285L765.397 209.285L765.397 1079.99L371.287 1079.99L371.287 209.285Z"   fill="url(#linear_fill_Y7T47MjJ_s1VZFiC5tCFp)" >
+</path>
+<g opacity="0.5">
+<g filter="url(#filter__52ZZLMF01lAyTHBd7YoH)">
+<ellipse cx="331.37045669555664" cy="445.5333595275879" rx="131.37045669555664" ry="134.11484146118164"   fill="#FF9CCF" >
+</ellipse>
+</g>
+</g>
+<g opacity="0.5">
+<g filter="url(#filter_t_STd1qoepLMsA5z2BrAm)">
+<ellipse cx="739.6294860839844" cy="334.1148376464844" rx="131.37051391601562" ry="134.11483764648438"   fill="#00FBFF" >
+</ellipse>
+</g>
+</g>
+<defs>
+<linearGradient id="linear_fill_Y7T47MjJ_s1VZFiC5tCFp" x1="568.8478393554688" y1="209.28488159179688" x2="568.8478393554688" y2="1079.9996643066406" gradientUnits="userSpaceOnUse">
+<stop offset="0.0007" stop-color="#4F52FF" stop-opacity="0.18" />
+<stop offset="0.7538" stop-color="#4F52FF" stop-opacity="0" />
+</linearGradient>
+<filter id="filter__52ZZLMF01lAyTHBd7YoH" x="0" y="111.41851806640625" width="662.7409057617188" height="668.2296752929688" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feGaussianBlur result="gaussian_blur__52ZZLMF01lAyTHBd7YoH" stdDeviation="100"/>
+</filter>
+<filter id="filter_t_STd1qoepLMsA5z2BrAm" x="408.25897216796875" y="0" width="662.7410278320312" height="668.2296752929688" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feGaussianBlur result="gaussian_blur_t_STd1qoepLMsA5z2BrAm" stdDeviation="100"/>
+</filter>
+</defs>
+</svg>
