@@ -1,0 +1,74 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: travel-assistant-backend
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:travel_assistant}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123456}
+
+  jpa:
+    hibernate:
+      # 首次可用 update 自动建表；生产环境建议改为 none 并用 schema.sql 管理
+      ddl-auto: update
+    # 让 data.sql 在 Hibernate 建表之后执行
+    defer-datasource-initialization: true
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 40MB
+
+  sql:
+    init:
+      mode: always
+      # 仅插入种子数据（幂等 ON DUPLICATE / INSERT IGNORE），表结构由 JPA 负责
+      data-locations: classpath:db/data.sql
+      continue-on-error: true
+
+# ==================== 业务自定义配置 ====================
+travel:
+  jwt:
+    # 生产环境请通过环境变量覆盖
+    secret: ${JWT_SECRET:meta-tourism-travel-assistant-jwt-secret-key-please-change-in-production-2026}
+    # token 有效期（毫秒），默认 7 天
+    expire: 604800000
+    header: Authorization
+    prefix: "Bearer "
+
+  # 大模型对话代理配置（默认 DeepSeek，OpenAI 兼容接口）
+  # 密钥在 https://platform.deepseek.com 创建，只放服务端，不再写入前端
+  llm:
+    base-url: ${LLM_BASE_URL:https://api.deepseek.com/v1}
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_MODEL:deepseek-chat}
+    # 单次请求超时（秒）
+    timeout: ${LLM_TIMEOUT:60}
+    # 发送给模型的历史消息条数上限（控制上下文长度与计费）
+    history-limit: ${LLM_HISTORY_LIMIT:20}
+    # 会员客服（默认同为 DeepSeek，如需豆包等单独配置，改下方 base-url/model 并配对应 Key）
+    kefu:
+      base-url: ${KEFU_BASE_URL:https://api.deepseek.com/v1}
+      api-key: ${KEFU_API_KEY:}
+      model: ${KEFU_MODEL:deepseek-chat}
+
+  upload:
+    # 相册 / 头像等图片本地存储目录
+    dir: ${UPLOAD_DIR:./uploads}
+    # 对外访问前缀
+    url-prefix: /uploads
+
+logging:
+  level:
+    com.meta.travel: info

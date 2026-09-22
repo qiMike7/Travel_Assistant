@@ -121,82 +121,74 @@
     <view class="logout-btn" @click="confirmLogout">
       退出登录
     </view>
-    
-    <!-- 确认退出弹窗 -->
-    <uni-popup ref="logoutPopup" type="dialog">
-      <uni-popup-dialog 
-        title="确认退出" 
-        content="确定要退出当前账号吗？"
-        :show-cancel-button="true"
-        @confirm="onLogout"
-        @cancel="onCancelLogout"
-      ></uni-popup-dialog>
-    </uni-popup>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, getCurrentInstance } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
 import CustomNavBar from '@/components/CustomNavBar.vue'
+import { preferenceApi } from '@/common/api/index.js'
+import { getUser, isLogin, clearAuth } from '@/common/utils/auth.js'
 
 const handleBack = () => {
 	uni.navigateBack({
 		delta: 1
 	});
 }
-// 获取组件实例
-const { proxy } = getCurrentInstance();
-
-// 路由实例
-const router = useRouter();
 
 // 状态管理
-const userAvatar = ref('https://picsum.photos/id/64/200/200');
+const userAvatar = ref('/static/settings/profile/avatar.png');
 const username = ref('旅行者');
 const notificationsEnabled = ref(true);
 const darkModeEnabled = ref(false);
 const cacheSize = ref('2.4');
 const appVersion = ref('1.0.0');
-const logoutPopup = ref(null);
+
+// 当前偏好快照，保存时整体提交
+const pref = ref({});
 
 // 生命周期
 onMounted(() => {
-  // 初始化设置数据
   initSettings();
 });
 
 // 初始化设置
-const initSettings = () => {
-  // 实际项目中，这里应该从本地存储或接口获取设置数据
-  const savedNotifications = uni.getStorageSync('notificationsEnabled');
-  const savedDarkMode = uni.getStorageSync('darkModeEnabled');
-  
-  if (savedNotifications !== null && savedNotifications !== undefined) {
-    notificationsEnabled.value = savedNotifications;
+const initSettings = async () => {
+  // 用户信息（来自登录缓存）
+  const u = getUser();
+  if (u) {
+    if (u.nickname) username.value = u.nickname;
+    if (u.avatar) userAvatar.value = u.avatar;
   }
-  
-  if (savedDarkMode !== null && savedDarkMode !== undefined) {
-    darkModeEnabled.value = savedDarkMode;
-  }
-  
-  // 获取用户信息
-  const userInfo = uni.getStorageSync('userInfo');
-  if (userInfo && userInfo.nickname) {
-    username.value = userInfo.nickname;
-  }
-  if (userInfo && userInfo.avatarUrl) {
-    userAvatar.value = userInfo.avatarUrl;
+  // 通知/深色模式偏好来自后端
+  if (!isLogin()) return;
+  try {
+    const p = await preferenceApi.get();
+    pref.value = p || {};
+    notificationsEnabled.value = p.notifications !== false;
+    darkModeEnabled.value = !!p.darkMode;
+  } catch (e) {
+    // 忽略
   }
 };
 
-// 导航返回
-const onBack = () => {
-  router.back();
+// 保存偏好变更到后端
+const savePref = async (patch) => {
+  pref.value = { ...pref.value, ...patch };
+  if (!isLogin()) return;
+  try {
+    await preferenceApi.save(pref.value);
+  } catch (e) {
+    // 错误提示已统一处理
+  }
 };
 
 // 导航到个人资料页
 const navigateToProfile = () => {
+  if (!isLogin()) {
+    uni.navigateTo({ url: '/pages/login/login' });
+    return;
+  }
   uni.navigateTo({
       url: '/pages/profile/profile'
     });
@@ -211,9 +203,8 @@ const navigateToPreference = () => {
 
 // 通知设置变更
 const onNotificationChange = (e) => {
-  // 小程序中通过e.detail.value获取开关状态
   notificationsEnabled.value = e.detail.value;
-  uni.setStorageSync('notificationsEnabled', notificationsEnabled.value);
+  savePref({ notifications: notificationsEnabled.value });
   uni.showToast({
     title: notificationsEnabled.value ? '通知已开启' : '通知已关闭',
     icon: 'none',
@@ -223,10 +214,8 @@ const onNotificationChange = (e) => {
 
 // 深色模式变更
 const onDarkModeChange = (e) => {
-  // 小程序中通过e.detail.value获取开关状态
   darkModeEnabled.value = e.detail.value;
-  uni.setStorageSync('darkModeEnabled', darkModeEnabled.value);
-  // 实际项目中，这里应该有切换主题的逻辑
+  savePref({ darkMode: darkModeEnabled.value });
   uni.showToast({
     title: darkModeEnabled.value ? '深色模式已开启' : '浅色模式已开启',
     icon: 'none',
@@ -240,7 +229,6 @@ const clearCache = () => {
     title: '清除中...'
   });
   
-  // 模拟清除缓存
   setTimeout(() => {
     uni.hideLoading();
     cacheSize.value = '0.0';
@@ -266,16 +254,23 @@ const navigateToPrivacy = () => {
     });
 };
 
-// 确认退出登录
+// 确认退出登录：使用系统弹窗（无需 uni-popup 组件），确认后执行 onLogout
 const confirmLogout = () => {
-  logoutPopup.value.open();
+  uni.showModal({
+    title: '确认退出',
+    content: '确定要退出当前账号吗？',
+    confirmText: '退出登录',
+    confirmColor: '#ff4d4f',
+    success: (res) => {
+      if (res.confirm) onLogout();
+    }
+  });
 };
 
 // 执行退出登录
 const onLogout = () => {
-  // 清除用户信息
-  uni.removeStorageSync('userInfo');
-  uni.removeStorageSync('token');
+  // 清除本地登录态
+  clearAuth();
   
   uni.showToast({
     title: '已退出登录',
@@ -283,16 +278,10 @@ const onLogout = () => {
     duration: 2000
   });
   
-  // 跳转到登录页
+  // 返回“我的”页
   setTimeout(() => {
-    router.replace('/pages/login/login');
+    uni.reLaunch({ url: '/pages/user/user' });
   }, 1000);
-};
-
-// 取消退出登录
-const onCancelLogout = () => {
-  // 关闭弹窗
-  logoutPopup.value.close();
 };
 </script>
 

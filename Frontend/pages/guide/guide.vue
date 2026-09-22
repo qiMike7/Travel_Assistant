@@ -27,63 +27,22 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import CustomNavBar from '@/components/CustomNavBar.vue'
+import { productApi } from '@/common/api/index.js'
 
-// 商品列表数据
-const products = reactive([
-	{
-		id: 1,
-		name: "户外登山背包",
-		description: "轻便防水，适合登山徒步",
-		price: 299,
-		originalPrice: 399,
-		image: "/static/shopping/bag.jpg"
-	},
-	{
-		id: 2,
-		name: "旅行收纳套装",
-		description: "多层收纳，整理神器",
-		price: 89,
-		originalPrice: 129,
-		image: "/static/shopping/shouna.jpg"
-	},
-	{
-		id: 3,
-		name: "文创笔记本",
-		description: "精美设计，记录美好时光",
-		price: 19,
-		originalPrice: 29,
-		image: "/static/shopping/notebook.jpg"
-	},
-	{
-		id: 4,
-		name: "古镇手工茶具",
-		description: "传统工艺，品味文化",
-		price: 599,
-		originalPrice: 799,
-		image: "/static/shopping/teacup.jpg"
-	},
-	{
-		id: 5,
-		name: "便携折叠水壶",
-		description: "折叠设计，携带方便",
-		price: 159,
-		originalPrice: 229,
-		image: "/static/shopping/bottle.jpg"
-	},
-	{
-		id: 6,
-		name: "旅游充电宝",
-		description: "大容量，快充支持",
-		price: 89,
-		originalPrice: 139,
-		image: "/static/shopping/chongdianbao.jpg"
+// 商品列表数据（来自后端 /api/products）
+const products = ref([])
+
+const loadProducts = async () => {
+	try {
+		const res = await productApi.list()
+		products.value = res || []
+	} catch (e) {
+		// 错误提示已在请求封装中统一处理
 	}
-])
-
-// 当前选中的商品
-const currentProduct = ref(null)
+}
 
 // 返回上一页
 const handleBack = () => {
@@ -92,22 +51,20 @@ const handleBack = () => {
 	})
 }
 
-// 购买商品
+// 立即购买：进入订单确认页（选数量/地址 -> 调起微信支付）
 const buyProduct = (product) => {
-	currentProduct.value = product
-	// 使用uni-app的showModal提示购买成功
-	uni.showModal({
-		title: '购买成功！',
-		content: `恭喜您成功购买 ${product.name}，价格：¥${product.price}`,
-		showCancel: false,
-		confirmText: '确定',
-		success: (res) => {
-			if (res.confirm) {
-				currentProduct.value = null
-			}
-		}
-	})
+	const query = [
+		`id=${product.id}`,
+		`name=${encodeURIComponent(product.name || '')}`,
+		`price=${product.price != null ? product.price : ''}`,
+		`image=${encodeURIComponent(product.image || '')}`
+	].join('&')
+	uni.navigateTo({ url: `/pages/order-confirm/order-confirm?${query}` })
 }
+
+onLoad(() => {
+	loadProducts()
+})
 </script>
 
 <style>

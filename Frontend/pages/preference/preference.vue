@@ -88,6 +88,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { preferenceApi } from '@/common/api/index.js'
+import { isLogin } from '@/common/utils/auth.js'
 
 // 默认偏好设置
 const defaultPreferences = {
@@ -109,13 +112,19 @@ function aiLevelText(level) {
   return texts[level - 1] || '未知'
 }
 
-// 保存偏好设置
-function savePreferences() {
-  uni.setStorageSync('userPreferences', preferences.value)
-  uni.showToast({
-    title: '设置已保存',
-    icon: 'success'
-  })
+// 保存偏好设置（已登录写入后端，未登录退回本地缓存）
+async function savePreferences() {
+  if (!isLogin()) {
+    uni.setStorageSync('userPreferences', preferences.value)
+    uni.showToast({ title: '设置已保存', icon: 'success' })
+    return
+  }
+  try {
+    await preferenceApi.save(preferences.value)
+    uni.showToast({ title: '设置已保存', icon: 'success' })
+  } catch (e) {
+    // 错误提示已统一处理
+  }
 }
 
 // 恢复默认
@@ -127,10 +136,27 @@ function resetPreferences() {
   })
 }
 
-// 页面加载时读取本地缓存
-onLoad(() => {
-  const saved = uni.getStorageSync('userPreferences')
-  if (saved) preferences.value = saved
+// 页面加载时读取偏好
+onLoad(async () => {
+  if (!isLogin()) {
+    const saved = uni.getStorageSync('userPreferences')
+    if (saved) preferences.value = { ...defaultPreferences, ...saved }
+    return
+  }
+  try {
+    const p = await preferenceApi.get()
+    if (p) {
+      preferences.value = {
+        travelMode: p.travelMode || defaultPreferences.travelMode,
+        budget: p.budget != null ? p.budget : defaultPreferences.budget,
+        stay: p.stay || defaultPreferences.stay,
+        aiLevel: p.aiLevel != null ? p.aiLevel : defaultPreferences.aiLevel,
+        notifications: p.notifications !== false
+      }
+    }
+  } catch (e) {
+    // 忽略，保持默认
+  }
 })
 </script>
 

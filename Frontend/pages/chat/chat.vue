@@ -96,6 +96,7 @@
 
 <script>
 import CustomNavBar from '@/components/CustomNavBar.vue'
+import { chatApi } from '@/common/api/index.js'
 
 export default {
   components: {
@@ -112,9 +113,8 @@ export default {
       inputHeight: '80rpx',
       minInputHeight: '80rpx',
       maxInputHeight: '200rpx',
-      apiKey: 'ms-8b15efbb-777c-484b-bc53-800fdaf78b73',
-      modelName: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
-      baseUrl: 'https://api-inference.modelscope.cn/v1'
+      // 会话 ID：首次为空，后端返回后复用，历史消息由后端维护
+      sessionId: null
     };
   },
   computed: {
@@ -145,13 +145,6 @@ export default {
       this.userInput = '';
       this.isLoading = true;
       this.scrollToBottom();
-      
-      // 构造请求数据（包含所有有效对话）
-      const requestData = {
-        model: this.modelName,
-        messages: this.validMessages,
-        stream: true
-      };
 
       // 添加新的助手消息占位
       const assistantMessage = { 
@@ -162,40 +155,29 @@ export default {
       this.messages.push(assistantMessage);
       const assistantMessageIndex = this.messages.length - 1;
 
-      this.fetchAssistantResponse(requestData, assistantMessageIndex);
+      this.requestAssistant(input, assistantMessageIndex);
     },
     
-    // 重新生成消息 - 核心修改部分
+    // 重新生成：定位到该助手消息对应的用户提问，重新向后端请求一次回答
     regenerateMessage(assistantMsgIndex) {
-      // 找到对应的用户消息（助手消息前一条应该是用户消息）
-      const userMsgIndex = assistantMsgIndex - 1;
-      if (userMsgIndex < 0 || this.validMessages[userMsgIndex].role !== 'user') {
+      if (this.isLoading) return;
+
+      // validMessages 已过滤 system，助手消息前一条应为用户提问
+      const targetUser = this.validMessages[assistantMsgIndex - 1];
+      if (!targetUser || targetUser.role !== 'user') {
         this.showToast('无法找到对应的问题');
         return;
       }
-      
-      // 避免重复操作
-      if (this.isLoading) return;
-      
-      // 1. 移除旧的助手消息（从原始messages数组中）
-      // 计算在原始messages数组中的索引（因为validMessages过滤了system消息）
+
+      // 移除旧的助手消息（在原始 messages 数组中定位）
       const originalMsgIndex = this.messages.findIndex(
         (msg, idx) => idx > 0 && this.validMessages[assistantMsgIndex] === msg
       );
-      
       if (originalMsgIndex !== -1) {
         this.messages.splice(originalMsgIndex, 1);
       }
-      
-      // 2. 准备新的请求数据（包含到该用户消息为止的所有对话）
-      const requestMessages = this.validMessages.slice(0, userMsgIndex + 1);
-      const requestData = {
-        model: this.modelName,
-        messages: requestMessages,
-        stream: true
-      };
-      
-      // 3. 添加新的助手消息占位
+
+      // 添加新的助手消息占位并请求
       const newAssistantMessage = { 
         role: 'assistant', 
         content: '',
@@ -203,70 +185,32 @@ export default {
       };
       this.messages.push(newAssistantMessage);
       const newAssistantIndex = this.messages.length - 1;
-      
-      // 4. 发起请求获取新回答
+
       this.isLoading = true;
       this.scrollToBottom();
-      this.fetchAssistantResponse(requestData, newAssistantIndex);
+      this.requestAssistant(targetUser.content, newAssistantIndex);
     },
     
-    // 提取公共的请求方法
-    fetchAssistantResponse(requestData, messageIndex) {
-      uni.request({
-        url: `${this.baseUrl}/chat/completions`,
-        method: 'POST',
-        data: requestData,
-        header: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        responseType: 'text',
-        success: (response) => {
-          if (response.statusCode === 200) {
-            this.handleStreamResponse(response.data, messageIndex);
-          } else {
-            this.handleError(`API返回错误: ${response.statusCode}`);
-          }
-        },
-        fail: (error) => {
-          this.handleError(`请求失败: ${error.errMsg}`);
-        }
-      });
-    },
-    
-    handleStreamResponse(data, index) {
+    // 调用后端大模型代理接口（/api/chat），历史消息由后端根据 sessionId 维护
+    async requestAssistant(content, messageIndex) {
       try {
-        if (index < 0 || index >= this.messages.length) {
-          throw new Error(`无效的消息索引: ${index}`);
+        const res = await chatApi.send({
+          sessionId: this.sessionId,
+          content
+        });
+        if (res && res.sessionId) {
+          this.sessionId = res.sessionId;
         }
-        
-        const dataStr = typeof data === 'string' ? data : String(data);
-        const lines = dataStr.split('\n').filter(line => line.trim() !== '');
-        
-        for (const line of lines) {
-          const dataStr = line.replace(/^data: /, '');
-          if (dataStr === '[DONE]') break;
-          
-          try {
-            const json = JSON.parse(dataStr);
-            const content = json.choices[0]?.delta?.content;
-            if (content && this.messages[index]) {
-              this.messages[index].content += content;
-              this.scrollToBottom();
-              this.$forceUpdate();
-            }
-          } catch (e) {
-            console.error('解析响应片段出错:', e, '内容:', dataStr);
-          }
+        if (this.messages[messageIndex]) {
+          this.messages[messageIndex].content = (res && res.content) || '';
+          this.messages[messageIndex].isComplete = true;
         }
       } catch (e) {
-        console.error('处理响应出错:', e);
-        this.handleError(`处理响应时出错: ${e.message}`);
-      } finally {
-        // 流式响应结束：标记为完整
-        if (this.messages[index]) {
-          this.messages[index].isComplete = true;
+        this.handleError((e && e.message) || '服务暂时不可用');
+        if (this.messages[messageIndex]) {
+          this.messages[messageIndex].isComplete = true;
         }
+      } finally {
         this.isLoading = false;
         this.scrollToBottom();
       }
@@ -274,11 +218,7 @@ export default {
     
     handleError(message) {
       console.error(message);
-      this.messages.push({ 
-        role: 'assistant', 
-        content: `抱歉，出现错误: ${message}`,
-        isComplete: true
-      });
+      this.showToast(`抱歉，出现错误: ${message}`);
       this.isLoading = false;
       this.scrollToBottom();
     },

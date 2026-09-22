@@ -50,6 +50,21 @@
 </template>
 
 <script>
+import { userApi, fileApi } from '@/common/api/index.js'
+import { toAbsoluteUrl } from '@/common/utils/request.js'
+
+// 中文标签 -> 后端字段映射
+const FIELD_MAP = {
+  '头像': 'avatar',
+  '名字': 'nickname',
+  '性别': 'gender',
+  '地区': 'region',
+  '手机号': 'phone',
+  '微信号': 'wechat',
+  '我的二维码': 'qrcode',
+  '签名': 'signature'
+}
+
 export default {
   data() {
     return {
@@ -61,16 +76,16 @@ export default {
       editingValue: '',
       // 性别选项
       genderList: ['男', '女', '保密'],
-      // 用户信息数据
+      // 用户信息数据（onLoad 时从后端加载）
       userInfo: {
         '头像': '/static/settings/profile/avatar.png',
-        '名字': '小趣',
-        '性别': '男',
-        '地区': '安徽 合肥',
-        '手机号': '189********25',
-        '微信号': '123456',
+        '名字': '',
+        '性别': '',
+        '地区': '',
+        '手机号': '',
+        '微信号': '',
         '我的二维码': '/static/settings/profile/qrcode.png',
-        '签名': '未填写'
+        '签名': ''
       },
       // 列表配置
       infoList: [
@@ -85,7 +100,40 @@ export default {
       ]
     };
   },
+  onLoad() {
+    this.loadProfile();
+  },
   methods: {
+    // 从后端加载个人资料
+    async loadProfile() {
+      try {
+        const u = await userApi.profile();
+        if (!u) return;
+        if (u.nickname) this.userInfo['名字'] = u.nickname;
+        if (u.gender) this.userInfo['性别'] = u.gender;
+        if (u.region) this.userInfo['地区'] = u.region;
+        if (u.phone) this.userInfo['手机号'] = u.phone;
+        if (u.wechat) this.userInfo['微信号'] = u.wechat;
+        if (u.signature) this.userInfo['签名'] = u.signature;
+        if (u.avatar) this.userInfo['头像'] = toAbsoluteUrl(u.avatar);
+        if (u.qrcode) this.userInfo['我的二维码'] = toAbsoluteUrl(u.qrcode);
+      } catch (e) {
+        // 未登录时请求封装会跳转登录页
+      }
+    },
+
+    // 提交单个字段到后端
+    async pushField(label, value) {
+      const field = FIELD_MAP[label];
+      if (!field) return;
+      try {
+        await userApi.updateProfile({ [field]: value });
+        uni.showToast({ title: '已保存', icon: 'success' });
+      } catch (e) {
+        // 错误提示已统一处理
+      }
+    },
+
     // 处理编辑事件
     handleEdit(item) {
       const key = item.title;
@@ -101,13 +149,21 @@ export default {
       }
     },
     
-    // 选择头像
+    // 选择头像：先上传到后端，再保存 URL
     chooseAvatar() {
       uni.chooseImage({
         count: 1,
         sizeType: ['original', 'compressed'],
-        success: (res) => {
-          this.userInfo['头像'] = res.tempFilePaths[0];
+        success: async (res) => {
+          const tempPath = res.tempFilePaths[0];
+          try {
+            const url = await fileApi.upload(tempPath);
+            // 入库保持相对路径（不受模拟器/真机 BASE_URL 差异影响），展示时拼绝对地址
+            this.userInfo['头像'] = toAbsoluteUrl(url);
+            this.pushField('头像', url);
+          } catch (e) {
+            // 上传失败提示已在封装中处理
+          }
         }
       });
     },
@@ -120,12 +176,14 @@ export default {
     // 保存文本编辑
     saveTextEdit() {
       this.userInfo[this.editingKey] = this.editingValue;
+      this.pushField(this.editingKey, this.editingValue);
       this.currentView = 'main';
     },
     
     // 保存性别编辑
     saveGenderEdit() {
       this.userInfo['性别'] = this.editingValue;
+      this.pushField('性别', this.editingValue);
       this.currentView = 'main';
     }
   }

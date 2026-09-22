@@ -18,7 +18,7 @@
         <view class="photo-box" @tap="chooseImage(index)">
           <image
             v-if="item.url"
-            :src="item.url"
+            :src="toAbsoluteUrl(item.url)"
             mode="aspectFill"
             class="photo"
           ></image>
@@ -42,14 +42,17 @@
 </template>
 
 <script setup>
-	import CustomNavBar from '@/components/CustomNavBar.vue'
-	
-	const handleBack = () => {
-		uni.navigateBack({
-			delta: 1
-		});
-	}
 import { ref } from 'vue'
+import CustomNavBar from '@/components/CustomNavBar.vue'
+import { albumApi, fileApi } from '@/common/api/index.js'
+import { isLogin } from '@/common/utils/auth.js'
+import { toAbsoluteUrl } from '@/common/utils/request.js'
+
+const handleBack = () => {
+	uni.navigateBack({
+		delta: 1
+	});
+}
 
 const photos = ref([])
 
@@ -74,20 +77,26 @@ function deletePhoto() {
   })
 }
 
-// 选择图片
+// 选择图片：选中后立即上传到后端，保存可访问的图片地址
 function chooseImage(index) {
   uni.chooseImage({
     count: 1,
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
-    success: res => {
-      photos.value[index].url = res.tempFilePaths[0]
+    success: async res => {
+      const tempPath = res.tempFilePaths[0]
+      try {
+        const url = await fileApi.upload(tempPath)
+        photos.value[index].url = url
+      } catch (e) {
+        // 上传失败提示已在封装中处理
+      }
     }
   })
 }
 
-// 保存相册（这里仅演示用）
-function saveAlbum() {
+// 保存相册：将上传后的图片地址随相册提交后端
+async function saveAlbum() {
   if (photos.value.length === 0) {
     uni.showToast({
       title: '请先添加照片',
@@ -105,11 +114,24 @@ function saveAlbum() {
     return
   }
 
-  console.log('保存的相册数据：', photos.value)
-  uni.showToast({
-    title: '相册已保存！',
-    icon: 'success'
-  })
+  if (!isLogin()) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    uni.navigateTo({ url: '/pages/login/login' })
+    return
+  }
+
+  try {
+    await albumApi.create({
+      title: '我的旅行相册',
+      photos: photos.value.map(p => ({ url: p.url, caption: p.text }))
+    })
+    uni.showToast({
+      title: '相册已保存！',
+      icon: 'success'
+    })
+  } catch (e) {
+    // 错误提示已统一处理
+  }
 }
 </script>
 

@@ -3,26 +3,43 @@
 		<!-- 带返回按钮的导航栏 -->
 		<CustomNavBar :showBack="true" title="我的订单" @back="handleBack" />
 		
-		<!-- 订单卡片 -->
-		<view class="order-card">
+		<!-- 订单列表 -->
+		<view v-if="orders.length === 0" class="empty-tip">
+			<text>暂无订单，去精品商城看看吧～</text>
+		</view>
+		<view class="order-card" v-for="(order, index) in orders" :key="index">
 			<view class="order-header">
-				<text class="order-number">订单号：1238526852352652</text>
-				<text class="order-status">已付款</text>
+				<text class="order-number">订单号：{{ order.orderNo }}</text>
+				<text class="order-status">{{ order.status }}</text>
 			</view>
 			<view class="order-content">
 				<text class="product-label">商品：</text>
-				<text class="product-name">商品名称-24小时使用</text>
+				<text class="product-name">{{ order.productName }} x{{ order.quantity }}</text>
 			</view>
 			<view class="order-footer">
 				<text class="price-label">总价：</text>
-				<text class="price-value">¥ 6</text>
+				<text class="price-value">¥ {{ order.totalAmount }}</text>
 			</view>
 		</view>
 	</view>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import CustomNavBar from '@/components/CustomNavBar.vue'
+import { orderApi } from '@/common/api/index.js'
+
+const orders = ref([])
+
+const loadOrders = async () => {
+	try {
+		const res = await orderApi.list()
+		orders.value = res || []
+	} catch (e) {
+		// 错误提示已在请求封装中统一处理（未登录会跳转登录页）
+	}
+}
 
 const handleBack = () => {
 	uni.navigateBack({
@@ -30,6 +47,9 @@ const handleBack = () => {
 	});
 }
 
+onLoad(() => {
+	loadOrders()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -98,5 +118,12 @@ const handleBack = () => {
 	font-size: 32rpx;
 	color: #FF4444;
 	font-weight: bold;
+}
+
+.empty-tip {
+	text-align: center;
+	color: #999;
+	font-size: 28rpx;
+	margin-top: 120rpx;
 }
 </style>

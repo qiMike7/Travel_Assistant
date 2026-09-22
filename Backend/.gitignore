@@ -1,0 +1,29 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 运行时产物
+uploads/
+logs/
+*.log
+
+# 本机专用配置（含数据库密码 / 大模型 Key，绝不提交）
+config/
+
+# 跨端编辑用的中转目录（临时，勿提交）
+.fe_staging/
+*.ps1.tmp
+
+# 临时脚本
+_*.ps1

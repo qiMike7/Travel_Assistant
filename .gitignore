@@ -134,3 +134,12 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# ===== Project: IDE & uni-app build outputs =====
+.idea/
+.vscode/
+*.iml
+Frontend/unpackage/
+**/unpackage/dist/
+uploads/
+config/application.properties

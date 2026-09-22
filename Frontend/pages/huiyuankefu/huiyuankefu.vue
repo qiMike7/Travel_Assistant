@@ -111,6 +111,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import CustomNavBar from '@/components/CustomNavBar.vue'
+import { chatApi } from '@/common/api/index.js'
 
 // 页面状态
 const userQuestion = ref('')
@@ -120,6 +121,7 @@ const chatHistory = ref([]) // 聊天历史记录
 const scrollTop = ref(0) // 滚动位置
 const quickReplies = ref([]) // 智能联想话题
 const shouldStop = ref(false) // 停止标志
+const kefuSessionId = ref(null) // 会员客服会话 ID（后端维护历史）
 
 // 从本地存储加载历史记录
 const loadChatHistory = () => {
@@ -163,29 +165,13 @@ const selectQuickReply = (reply) => {
   sendDoubaoRequest()
 }
 
-// 生成智能联想话题
+// 生成智能联想话题（走后端大模型代理，避免暴露 API Key）
 const generateRelatedTopics = async (userQuestion, aiResponse) => {
   try {
-    const response = await uni.request({
-      url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-      method: 'POST',
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer a5dcccf2-a360-4197-bebe-024c7933daeb'
-      },
-      data: {
-        model: "doubao-seed-1-6-250615",
-        messages: [
-          {
-            content: [{ 
-              text: `用户问题："${userQuestion}"\n\nAI回复："${aiResponse}"\n\n请根据用户的问题和AI的回复，生成2-3个用户可能会继续询问的相关问题。要求：\n1. 问题要简洁明了，每个问题不超过20个字\n2. 问题要与原话题相关但有所延伸\n3. 直接返回问题列表，每行一个问题，不要其他说明文字\n4. 格式示例：\n问题1\n问题2\n问题3`, 
-              type: 'text' 
-            }],
-            role: 'user'
-          }
-        ]
-      }
-    })
+    const topicPrompt = `用户问题："${userQuestion}"\n\nAI回复："${aiResponse}"\n\n请根据用户的问题和AI的回复，生成2-3个用户可能会继续询问的相关问题。要求：\n1. 问题要简洁明了，每个问题不超过20个字\n2. 问题要与原话题相关但有所延伸\n3. 直接返回问题列表，每行一个问题，不要其他说明文字\n4. 格式示例：\n问题1\n问题2\n问题3`
+    const kefuRes = await chatApi.kefu({ sessionId: null, content: topicPrompt })
+    // 适配下游解析逻辑（保持原有 choices 结构）
+    const response = { data: { choices: [ { message: { content: (kefuRes && kefuRes.content) || '' } } ] } }
     
     if (response.data.choices && response.data.choices.length > 0) {
       const choice = response.data.choices[0]
@@ -264,24 +250,16 @@ const sendDoubaoRequest = async () => {
       return
     }
     
-    const response = await uni.request({
-      url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-      method: 'POST',
-      header: {
-        'Content-Type': 'application/json',
-        // 危险！API Key 暴露在前端代码中
-        'Authorization': 'Bearer a5dcccf2-a360-4197-bebe-024c7933daeb'
-      },
-      data: {
-        model: "doubao-seed-1-6-250615",
-        messages: [
-          {
-            content: [ { text: currentQuestion, type: 'text' } ],
-            role: 'user'
-          }
-        ]
-      }
+    // 调用后端会员客服代理接口（/api/kefu/chat），历史消息由后端根据 sessionId 维护
+    const kefuRes = await chatApi.kefu({
+      sessionId: kefuSessionId.value,
+      content: currentQuestion
     })
+    if (kefuRes && kefuRes.sessionId) {
+      kefuSessionId.value = kefuRes.sessionId
+    }
+    // 适配下游解析逻辑（保持原有 choices 结构）
+    const response = { data: { choices: [ { message: { content: (kefuRes && kefuRes.content) || '' } } ] } }
 
     // 检查是否需要停止
     if (shouldStop.value) {
@@ -389,6 +367,7 @@ const clearHistory = () => {
   chatHistory.value = []
   doubaoAnswer.value = ''
   quickReplies.value = [] // 清空联想话题
+  kefuSessionId.value = null // 重置会话，下次重新开启
   try {
     uni.removeStorageSync('chatHistory')
   } catch (error) {

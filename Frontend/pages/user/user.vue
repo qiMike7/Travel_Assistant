@@ -5,11 +5,11 @@
 
 		<view class="section top">
 			<view class="section-content">
-				<view class="section-left">
-					<image src="/static/assets/user/pic/avatar.png" class="avatar-image"></image>
+				<view class="section-left" @click="goProfile">
+					<image :src="avatarUrl" class="avatar-image"></image>
 					<view class="user-info">
-						<text class="avatar-name">TEST</text>
-						<text class="avatar-desc">这个人很懒，什么都没有留下</text>
+						<text class="avatar-name">{{ displayName }}</text>
+						<text class="avatar-desc">{{ displayDesc }}</text>
 					</view>
 				</view>
 				<view class="section-right">
@@ -68,7 +68,7 @@
 				</view>
 				<view class="vip-footer">
 					<image src="/static/assets/user/icons/联系我们.png" class="vip-image"></image>
-					当前会话到期时间：2025年08月06日 00:45
+					当前会话到期时间：{{ vipExpireText }}
 				</view>
 			</view>
 		</view>
@@ -89,15 +89,87 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import CustomNavBar from '@/components/CustomNavBar.vue'
+import { userApi, payApi } from '@/common/api/index.js'
+import { isLogin, getUser, setUser } from '@/common/utils/auth.js'
+import { toAbsoluteUrl } from '@/common/utils/request.js'
+import { invokeWxPayment } from '@/common/utils/pay.js'
 
-// 开通VIP服务处理函数
+const user = ref(getUser() || {})
+
+const avatarUrl = computed(() => toAbsoluteUrl(user.value.avatar) || '/static/assets/user/pic/avatar.png')
+const displayName = computed(() => user.value.nickname || (isLogin() ? '旅行者' : '点击登录'))
+const displayDesc = computed(() => user.value.signature || '这个人很懒，什么都没有留下')
+const vipExpireText = computed(() => user.value.vipExpireTime || '未开通')
+
+// 每次显示页面时刷新登录用户信息
+const loadUser = async () => {
+  if (!isLogin()) {
+    user.value = {}
+    return
+  }
+  try {
+    const u = await userApi.profile()
+    user.value = u || {}
+    setUser(u)
+  } catch (e) {
+    // 未登录或异常，保持本地缓存
+  }
+}
+
+onShow(() => {
+  loadUser()
+})
+
+// 头像区：未登录去登录，已登录去资料页
+const goProfile = () => {
+  if (!isLogin()) {
+    uni.navigateTo({ url: '/pages/login/login' })
+    return
+  }
+  uni.navigateTo({ url: '/pages/profile/profile' })
+}
+
+// 会员套餐：周卡 ¥10（7天）、月卡 ¥30（30天）
+const VIP_PLANS = [
+  { label: '周卡 ¥10（7 天）', price: 10, hours: 24 * 7 },
+  { label: '月卡 ¥30（30 天）', price: 30, hours: 24 * 30 }
+]
+
+// 开通 VIP：选择套餐 -> 微信支付 -> 支付成功后后端赠送对应时长
 const handleOpenVip = () => {
-  console.log('开通VIP服务');
-  uni.showToast({
-    title: '开通VIP服务',
-    icon: 'none'
-  });
+  if (!isLogin()) {
+    uni.navigateTo({ url: '/pages/login/login' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: VIP_PLANS.map(p => p.label),
+    success: async ({ tapIndex }) => {
+      const plan = VIP_PLANS[tapIndex]
+      if (!plan) return
+      try {
+        // 1. 向后端换取微信支付参数（bizType=vip）
+        const payParams = await payApi.wechat({
+          bizType: 'vip',
+          plan: tapIndex === 0 ? 'week' : 'month',
+          amount: plan.price
+        })
+        // 2. 调起微信支付收银台
+        await invokeWxPayment({ ...(payParams || {}), amount: plan.price })
+        // 3. 支付成功：按套餐时长开通
+        const u = await userApi.grantVip(plan.hours)
+        if (u) {
+          user.value = u
+          setUser(u)
+        }
+        uni.showToast({ title: '开通成功', icon: 'success' })
+      } catch (e) {
+        // 支付取消或接口异常，错误提示已统一处理
+      }
+    }
+  })
 }
 
 const goSettings = () => {
