@@ -1,8 +1,6 @@
 # Maven
 target/
-!.mvn/wrapper/maven-wrapper.jar
-mvnw
-mvnw.cmd
+# 保留 Maven Wrapper（mvnw / mvnw.cmd / .mvn/），让克隆方无需预装 Maven
 
 # IDE
 .idea/
