@@ -51,21 +51,6 @@
             ></switch>
           </view>
         </view>
-        
-        <view class="setting-item">
-          <view class="item-icon"></view>
-          <view class="item-content">
-            <view class="item-title">深色模式</view>
-            <view class="item-desc">切换应用显示主题</view>
-          </view>
-          <view class="switch-container">
-            <switch 
-              :checked="darkModeEnabled" 
-              color="#42b983"
-              @change="onDarkModeChange"
-            ></switch>
-          </view>
-        </view>
       </view>
       
       <!-- 数据管理 -->
@@ -140,7 +125,6 @@ const handleBack = () => {
 const userAvatar = ref('/static/settings/profile/avatar.png');
 const username = ref('旅行者');
 const notificationsEnabled = ref(true);
-const darkModeEnabled = ref(false);
 const cacheSize = ref('2.4');
 const appVersion = ref('1.0.0');
 
@@ -160,13 +144,12 @@ const initSettings = async () => {
     if (u.nickname) username.value = u.nickname;
     if (u.avatar) userAvatar.value = u.avatar;
   }
-  // 通知/深色模式偏好来自后端
+  // 通知偏好来自后端
   if (!isLogin()) return;
   try {
     const p = await preferenceApi.get();
     pref.value = p || {};
     notificationsEnabled.value = p.notifications !== false;
-    darkModeEnabled.value = !!p.darkMode;
   } catch (e) {
     // 忽略
   }
@@ -207,17 +190,6 @@ const onNotificationChange = (e) => {
   savePref({ notifications: notificationsEnabled.value });
   uni.showToast({
     title: notificationsEnabled.value ? '通知已开启' : '通知已关闭',
-    icon: 'none',
-    duration: 2000
-  });
-};
-
-// 深色模式变更
-const onDarkModeChange = (e) => {
-  darkModeEnabled.value = e.detail.value;
-  savePref({ darkMode: darkModeEnabled.value });
-  uni.showToast({
-    title: darkModeEnabled.value ? '深色模式已开启' : '浅色模式已开启',
     icon: 'none',
     duration: 2000
   });
