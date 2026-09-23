@@ -12,6 +12,7 @@ import com.meta.travel.repository.UserRepository;
 import com.meta.travel.security.JwtUtil;
 import com.meta.travel.util.PasswordUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -30,15 +31,25 @@ public class AuthService {
 
     @Transactional
     public LoginResponse register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new BusinessException(ResultCode.BUSINESS_ERROR, "用户名已存在");
+        String username = request.getUsername() == null ? null : request.getUsername().trim();
+        if (!StringUtils.hasText(username)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "用户名不能为空");
+        }
+        // 服务层存在性检查：注册前显式拦截重复用户名
+        if (userRepository.existsByUsername(username)) {
+            throw new BusinessException(ResultCode.CONFLICT, "用户名已存在");
         }
         User user = new User();
-        user.setUsername(request.getUsername());
+        user.setUsername(username);
         user.setPassword(PasswordUtil.encode(request.getPassword()));
-        user.setNickname(StringUtils.hasText(request.getNickname()) ? request.getNickname() : request.getUsername());
+        user.setNickname(StringUtils.hasText(request.getNickname()) ? request.getNickname() : username);
         user.setSignature("这个人很懒，什么都没有留下");
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            // 并发注册兜底：username 唯一索引冲突时转为友好提示
+            throw new BusinessException(ResultCode.CONFLICT, "用户名已存在");
+        }
 
         // 初始化默认偏好
         Preference preference = new Preference();
@@ -46,6 +57,17 @@ public class AuthService {
         preferenceRepository.save(preference);
 
         return buildLoginResponse(user);
+    }
+
+    /**
+     * 用户名是否可用（未被占用）
+     */
+    @Transactional(readOnly = true)
+    public boolean isUsernameAvailable(String username) {
+        if (!StringUtils.hasText(username)) {
+            return false;
+        }
+        return !userRepository.existsByUsername(username.trim());
     }
 
     @Transactional

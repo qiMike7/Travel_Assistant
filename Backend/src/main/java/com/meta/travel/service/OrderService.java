@@ -54,12 +54,32 @@ public class OrderService {
         order.setUnitPrice(unitPrice);
         order.setQuantity(qty);
         order.setTotalAmount(total);
-        order.setStatus("已付款");
+        // 下单仅创建待支付订单，支付确认后才推进为“已付款”（见 markPaid）
+        order.setStatus("待付款");
 
         product.setStock(product.getStock() == null ? null : product.getStock() - qty);
         product.setSales((product.getSales() == null ? 0 : product.getSales()) + qty);
         productRepository.save(product);
 
+        return orderRepository.save(order);
+    }
+
+    /**
+     * 支付成功确认：把待付款订单推进为已付款。
+     * <p>幂等：重复确认直接返回；已取消订单不可恢复。</p>
+     * <p>演示阶段由前端在 wx.requestPayment 成功后调用 /api/payments/confirm 触发；
+     * 生产环境应以微信支付异步通知（验签后）为准。</p>
+     */
+    @Transactional
+    public Order markPaid(Long userId, Long orderId) {
+        Order order = getById(userId, orderId);
+        if ("已付款".equals(order.getStatus())) {
+            return order;
+        }
+        if ("已取消".equals(order.getStatus())) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "订单已取消，无法支付");
+        }
+        order.setStatus("已付款");
         return orderRepository.save(order);
     }
 

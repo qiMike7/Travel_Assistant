@@ -3,6 +3,7 @@ package com.meta.travel.controller;
 import com.meta.travel.common.Result;
 import com.meta.travel.dto.request.ChatRequest;
 import com.meta.travel.dto.response.ChatMessageVO;
+import com.meta.travel.dto.response.ChatQuotaVO;
 import com.meta.travel.dto.response.ChatResponse;
 import com.meta.travel.dto.response.ChatSessionVO;
 import com.meta.travel.security.UserContext;
@@ -44,6 +45,12 @@ public class ChatController {
     public Result<ChatResponse> kefu(@Valid @RequestBody ChatRequest request) {
         ChatResponse response = chatService.chat(UserContext.currentUserId(), request, "kefu");
         return Result.success(response);
+    }
+
+    /** 今日提问额度（非会员每日限 5 次）：{ vip, used, limit } */
+    @GetMapping("/chat/quota")
+    public Result<ChatQuotaVO> quota() {
+        return Result.success(chatService.quota(UserContext.currentUserId()));
     }
 
     @GetMapping("/chat/sessions")

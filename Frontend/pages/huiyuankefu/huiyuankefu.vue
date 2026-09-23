@@ -112,6 +112,7 @@
 import { ref, onMounted } from 'vue'
 import CustomNavBar from '@/components/CustomNavBar.vue'
 import { chatApi } from '@/common/api/index.js'
+import { isLogin, getUser } from '@/common/utils/auth.js'
 
 // 页面状态
 const userQuestion = ref('')
@@ -144,9 +145,47 @@ const saveChatHistory = () => {
   }
 }
 
-// 页面加载时读取历史记录
+// 会员入口拦截：未登录去登录，非会员引导开通
+const guardVipEntry = () => {
+  if (!isLogin()) {
+    uni.showModal({
+      title: '登录提醒',
+      content: '会员客服需登录后使用',
+      confirmText: '去登录',
+      success: (res) => {
+        if (res.confirm) {
+          uni.navigateTo({ url: '/pages/login/login' })
+        } else {
+          uni.navigateBack({ delta: 1 })
+        }
+      },
+      fail: () => uni.navigateBack({ delta: 1 })
+    })
+    return
+  }
+  const u = getUser() || {}
+  if (!u.vip) {
+    uni.showModal({
+      title: '会员专享',
+      content: '会员客服为 VIP 专属功能，开通会员即可使用',
+      confirmText: '去开通',
+      cancelText: '返回',
+      success: (res) => {
+        if (res.confirm) {
+          uni.switchTab({ url: '/pages/user/user' })
+        } else {
+          uni.navigateBack({ delta: 1 })
+        }
+      },
+      fail: () => uni.navigateBack({ delta: 1 })
+    })
+  }
+}
+
+// 页面加载时读取历史记录，并校验会员身份
 onMounted(() => {
   loadChatHistory()
+  guardVipEntry()
 })
 
 // 返回按钮处理
@@ -344,7 +383,25 @@ const sendDoubaoRequest = async () => {
     if (shouldStop.value) {
       return
     }
-    
+
+    // 后端判定非会员（4292）：引导开通后退出本页
+    if (err && err.code === 4292) {
+      uni.showModal({
+        title: '会员专享',
+        content: '会员客服为 VIP 专属功能，开通会员即可使用',
+        confirmText: '去开通',
+        cancelText: '返回',
+        success: (res) => {
+          if (res.confirm) {
+            uni.switchTab({ url: '/pages/user/user' })
+          } else {
+            uni.navigateBack({ delta: 1 })
+          }
+        }
+      })
+      return
+    }
+
     console.error('请求失败:', err)
     const errorMsg = '请求失败，请稍后重试'
     doubaoAnswer.value = errorMsg

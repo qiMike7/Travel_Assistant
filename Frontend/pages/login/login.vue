@@ -15,7 +15,8 @@
 
 			<view class="field">
 				<text class="label">账号</text>
-				<input class="input" v-model="form.username" placeholder="请输入账号" />
+				<input class="input" v-model="form.username" placeholder="请输入账号" @blur="checkUsername" @input="onUsernameInput" />
+				<text v-if="mode === 'register' && usernameHint" class="hint" :class="usernameHintClass">{{ usernameHint }}</text>
 			</view>
 			<view class="field">
 				<text class="label">密码</text>
@@ -32,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import CustomNavBar from '@/components/CustomNavBar.vue'
 import { authApi } from '@/common/api/index.js'
 import { setToken, setUser } from '@/common/utils/auth.js'
@@ -40,14 +41,49 @@ import { setToken, setUser } from '@/common/utils/auth.js'
 const mode = ref('login')
 const loading = ref(false)
 const form = reactive({ username: '', password: '', nickname: '' })
+// 注册时账号实时查重状态：'' | 'taken' | 'ok' | 'checking'
+const usernameStatus = ref('')
+
+const usernameHint = computed(() => {
+	if (usernameStatus.value === 'taken') return '该账号已被注册，请更换'
+	if (usernameStatus.value === 'ok') return '该账号可以使用'
+	if (usernameStatus.value === 'checking') return '检测中...'
+	return ''
+})
+const usernameHintClass = computed(() => 'hint-' + usernameStatus.value)
 
 const handleBack = () => {
 	uni.navigateBack({ delta: 1 })
 }
 
+// 账号输入变化时重置查重状态
+const onUsernameInput = () => {
+	usernameStatus.value = ''
+}
+
+// 失焦实时查重（仅注册模式）
+const checkUsername = async () => {
+	if (mode.value !== 'register') return
+	const u = form.username.trim()
+	if (!u) { usernameStatus.value = ''; return }
+	usernameStatus.value = 'checking'
+	try {
+		const available = await authApi.checkUsername(u)
+		usernameStatus.value = available ? 'ok' : 'taken'
+	} catch (e) {
+		// 查询失败不阻断注册，交由后端提交时兜底校验
+		usernameStatus.value = ''
+	}
+}
+
 const submit = async () => {
 	if (!form.username.trim() || !form.password.trim()) {
 		uni.showToast({ title: '请填写账号和密码', icon: 'none' })
+		return
+	}
+	// 注册时若已查重确认账号被占用，直接拦截
+	if (mode.value === 'register' && usernameStatus.value === 'taken') {
+		uni.showToast({ title: '该账号已被注册，请更换', icon: 'none' })
 		return
 	}
 	loading.value = true
@@ -145,6 +181,23 @@ const submit = async () => {
 	border-radius: 14rpx;
 	padding: 20rpx 24rpx;
 	font-size: 30rpx;
+}
+
+.hint {
+	font-size: 24rpx;
+	margin-top: 10rpx;
+}
+
+.hint-taken {
+	color: #ff4444;
+}
+
+.hint-ok {
+	color: #07c160;
+}
+
+.hint-checking {
+	color: #999;
 }
 
 .submit {

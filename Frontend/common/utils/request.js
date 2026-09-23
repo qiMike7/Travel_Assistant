@@ -18,6 +18,10 @@ const REQUEST_TIMEOUT = 30000
 // AI 对话接口超时（毫秒）：后端代理大模型，正常可能近一分钟
 export const LLM_TIMEOUT = 120000
 
+// 会员引导类错误码：不弹通用 toast，由页面自行弹窗引导开通会员
+// 4291 今日免费提问次数用完 / 4292 会员专属功能 / 4293 攻略保存数量达上限
+const SILENT_CODES = [4291, 4292, 4293]
+
 /**
  * 拼接后端完整地址（小程序不能直接请求相对路径）
  */
@@ -80,7 +84,9 @@ export function request(options = {}) {
 					return
 				}
 				const msg = (body && body.message) || ('请求失败(' + res.statusCode + ')')
-				uni.showToast({ title: msg, icon: 'none' })
+				if (!(body && SILENT_CODES.indexOf(body.code) >= 0)) {
+					uni.showToast({ title: msg, icon: 'none' })
+				}
 				reject(body || { message: msg })
 			},
 			fail: (err) => {

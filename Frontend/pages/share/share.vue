@@ -33,7 +33,7 @@ onMounted(() => {
   // 设置分享给朋友的内容
   uni.onShareAppMessage(() => {
     return {
-      title: '趣定旅游 - 精美旅游攻略',
+      title: '智趣旅行 - 精美旅游攻略',
       desc: '发现美好旅程，分享精彩瞬间',
       path: '/pages/share/share',
       imageUrl: '../../static/assets/海报.png'
@@ -43,7 +43,7 @@ onMounted(() => {
   // 设置分享到朋友圈的内容
   uni.onShareTimeline(() => {
     return {
-      title: '趣定旅游 - 精美旅游攻略',
+      title: '智趣旅行 - 精美旅游攻略',
       imageUrl: '../../static/assets/海报.png'
     }
   })
@@ -165,7 +165,7 @@ const shareToWeChat = () => {
           scene: 'WXSceneSession',
           type: 0,
           href: 'https://your-app-domain.com/share',
-          title: '趣定旅游 - 精美旅游攻略',
+          title: '智趣旅行 - 精美旅游攻略',
           summary: '发现美好旅程，分享精彩瞬间',
           imageUrl: '../../static/assets/海报.png',
           success: function (res) {
@@ -194,7 +194,7 @@ const shareToWeChatMoments = () => {
           scene: 'WXSceneTimeline',
           type: 0,
           href: 'https://your-app-domain.com/share',
-          title: '趣定旅游 - 精美旅游攻略',
+          title: '智趣旅行 - 精美旅游攻略',
           summary: '发现美好旅程，分享精彩瞬间',
           imageUrl: '../../static/assets/海报.png',
           success: function (res) {
@@ -214,14 +214,10 @@ const shareToWeChatMoments = () => {
 
 // 保存图片到相册
 const saveImageToAlbum = () => {
+  // 微信小程序环境用绝对路径，其他环境用相对路径
+  let imagePath = '../../static/assets/海报.png'
   // #ifdef MP-WEIXIN
-  // 微信小程序环境，使用绝对路径
-  const imagePath = '/static/assets/海报.png'
-  // #endif
-  
-  // #ifndef MP-WEIXIN
-  // 其他环境使用相对路径
-  const imagePath = '../../static/assets/海报.png'
+  imagePath = '/static/assets/海报.png'
   // #endif
   
   // 先检查授权状态

@@ -1,8 +1,8 @@
 <template>
   <view class="album-page">
-	<CustomNavBar :showBack="true" title="旅行相册" @back="handleBack" />
+	<CustomNavBar :showBack="true" title="拍照打卡" @back="handleBack" />
     <!-- 标题 -->
-    <view class="title">来制定属于你的旅行相册</view>
+    <view class="title">拍照打卡 · 记录旅途美好</view>
 
     <!-- 保存按钮 -->
     <button class="save-btn" @tap="saveAlbum">保存相册</button>
@@ -49,9 +49,7 @@ import { isLogin } from '@/common/utils/auth.js'
 import { toAbsoluteUrl } from '@/common/utils/request.js'
 
 const handleBack = () => {
-	uni.navigateBack({
-		delta: 1
-	});
+  uni.navigateBack({ delta: 1 })
 }
 
 const photos = ref([])

@@ -69,6 +69,12 @@
       </view>
     </scroll-view>
     
+    <!-- 非会员今日额度提示 -->
+    <view class="quota-tip" v-if="quota && !quota.vip">
+      <text class="quota-text">今日剩余提问 {{ quotaRemaining }} 次（每日免费 {{ quota.limit }} 次）</text>
+      <text class="quota-open" @click="goOpenVip">开通会员 &gt;</text>
+    </view>
+
     <!-- 输入区域 -->
     <view class="input-area">
       <input 
@@ -97,6 +103,7 @@
 <script>
 import CustomNavBar from '@/components/CustomNavBar.vue'
 import { chatApi } from '@/common/api/index.js'
+import { isLogin } from '@/common/utils/auth.js'
 
 export default {
   components: {
@@ -114,7 +121,9 @@ export default {
       minInputHeight: '80rpx',
       maxInputHeight: '200rpx',
       // 会话 ID：首次为空，后端返回后复用，历史消息由后端维护
-      sessionId: null
+      sessionId: null,
+      // 今日提问额度：{ vip, used, limit }， null 表示未登录/未拉取
+      quota: null
     };
   },
   computed: {
@@ -122,10 +131,15 @@ export default {
       return this.messages.filter(msg => {
         return msg && typeof msg === 'object' && 'role' in msg && 'content' in msg;
       }).filter(msg => msg.role !== 'system');
+    },
+    quotaRemaining() {
+      if (!this.quota) return this.messages.length ? 0 : 5;
+      return Math.max((this.quota.limit || 5) - (this.quota.used || 0), 0);
     }
   },
   onReady() {
     this.scrollToBottom();
+    this.loadQuota();
   },
   methods: {
     handleBack() {
@@ -159,7 +173,7 @@ export default {
     },
     
     // 重新生成：定位到该助手消息对应的用户提问，重新向后端请求一次回答
-    regenerateMessage(assistantMsgIndex) {
+    async regenerateMessage(assistantMsgIndex) {
       if (this.isLoading) return;
 
       // validMessages 已过滤 system，助手消息前一条应为用户提问
@@ -188,9 +202,71 @@ export default {
 
       this.isLoading = true;
       this.scrollToBottom();
-      this.requestAssistant(targetUser.content, newAssistantIndex);
+      try {
+        await this.sendRegenerate(targetUser.content, newAssistantIndex);
+      } catch (e) {
+        if (e && e.code === 4291) {
+          // 重新生成时额度用完，同样引导开通
+          this.messages.splice(newAssistantIndex, 1);
+          this.isLoading = false;
+          this.showVipGuide('今日 5 次免费提问已用完，开通会员即可畅享无限对话~');
+          this.loadQuota();
+          return;
+        }
+        this.handleError((e && e.message) || '服务暂时不可用');
+      }
+      // 重新生成成功时刷新额度展示
+      this.loadQuota();
+    },
+
+    // 重新生成用的独立请求（避开 requestAssistant 的 4291 默认处理，错误抛给调用方）
+    async sendRegenerate(content, messageIndex) {
+      const res = await chatApi.send({
+        sessionId: this.sessionId,
+        content
+      });
+      if (res && res.sessionId) {
+        this.sessionId = res.sessionId;
+      }
+      if (this.messages[messageIndex]) {
+        this.messages[messageIndex].content = (res && res.content) || '';
+        this.messages[messageIndex].isComplete = true;
+      }
     },
     
+    // 拉取今日提问额度（会员不限次，后端返回 vip=true）
+    async loadQuota() {
+      if (!isLogin()) {
+        this.quota = null;
+        return;
+      }
+      try {
+        const res = await chatApi.quota();
+        this.quota = res || null;
+      } catch (e) {
+        // 额度查询失败不打断对话，仅隐藏提示条
+      }
+    },
+
+    // 会员引导弹窗：确认后去“我的”页开通
+    showVipGuide(content) {
+      uni.showModal({
+        title: '会员专享',
+        content,
+        confirmText: '去开通',
+        cancelText: '暂不开通',
+        success: (res) => {
+          if (res.confirm) {
+            uni.switchTab({ url: '/pages/user/user' });
+          }
+        }
+      });
+    },
+
+    goOpenVip() {
+      uni.switchTab({ url: '/pages/user/user' });
+    },
+
     // 调用后端大模型代理接口（/api/chat），历史消息由后端根据 sessionId 维护
     async requestAssistant(content, messageIndex) {
       try {
@@ -206,10 +282,18 @@ export default {
           this.messages[messageIndex].isComplete = true;
         }
       } catch (e) {
-        this.handleError((e && e.message) || '服务暂时不可用');
-        if (this.messages[messageIndex]) {
-          this.messages[messageIndex].isComplete = true;
+        if (e && e.code === 4291) {
+          // 今日免费次数用完：移除助手空气泡，回填输入，引导开通会员
+          this.messages.splice(messageIndex, 1);
+          this.userInput = this.userInput || content;
+          this.showVipGuide('今日 5 次免费提问已用完，开通会员即可畅享无限对话~');
+        } else {
+          this.handleError((e && e.message) || '服务暂时不可用');
+          if (this.messages[messageIndex]) {
+            this.messages[messageIndex].isComplete = true;
+          }
         }
+        this.loadQuota();
       } finally {
         this.isLoading = false;
         this.scrollToBottom();
@@ -461,6 +545,26 @@ export default {
   background-color: #fff;
   border-top: 1px solid #eee;
   box-sizing: border-box;
+}
+
+.quota-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10rpx 24rpx;
+  background-color: #fff7e6;
+  border-top: 1px solid #ffe7ba;
+}
+
+.quota-text {
+  font-size: 24rpx;
+  color: #ad6800;
+}
+
+.quota-open {
+  font-size: 24rpx;
+  color: #fa8c16;
+  font-weight: bold;
 }
 
 .message-input {

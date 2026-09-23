@@ -1,0 +1,11 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- 折叠地图轮廓：深藏青细线条，与同排 vip/shopping/tell 图标风格一致 -->
+<path d="M3.2 6.6L9 4.6L15 6.6L20.8 4.6V17.4L15 19.4L9 17.4L3.2 19.4V6.6Z" stroke="#1F2944" stroke-width="1.6" stroke-linejoin="round"/>
+<!-- 折痕 -->
+<path d="M9 4.6V17.4M15 6.6V19.4" stroke="#1F2944" stroke-width="1.2" stroke-linecap="round"/>
+<!-- 规划路线：亮蓝点状虚线 -->
+<path d="M6.4 14.2C8 11 10.4 15.4 12 12.2C13.2 9.8 14.8 12.6 16.8 10.2" stroke="#2F7BFF" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="0.1 2.7"/>
+<!-- 起终点定位圆点 -->
+<circle cx="6.4" cy="14.2" r="1.4" fill="#2F7BFF"/>
+<circle cx="16.8" cy="10.2" r="1.4" fill="#2F7BFF"/>
+</svg>

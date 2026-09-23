@@ -50,10 +50,6 @@
 				</view>
 			</view>
 
-			<!-- Meta Tourism 文本 -->
-			<view class="meta-text">
-				<text class="meta-label">由 Meta- Tourism 自研文旅垂类语言模型支持</text>
-			</view>
 		</view>
 
 	</view>

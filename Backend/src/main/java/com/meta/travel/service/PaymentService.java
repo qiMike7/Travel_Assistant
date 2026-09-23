@@ -61,6 +61,15 @@ public class PaymentService {
         return new WxPayParamsVO(payProperties.getAppId(), timeStamp, nonceStr, packageStr, signType, paySign);
     }
 
+    /**
+     * Confirm payment success: advance the order to PAID.
+     * Called by the client after wx.requestPayment resolves (or after the user finishes the
+     * mock QR panel). In production this must be driven by the verified WeChat async notify.
+     */
+    public Order confirmPaid(Long userId, PaymentRequest request) {
+        return orderService.markPaid(userId, request.getOrderId());
+    }
+
     private WxPayParamsVO mockParams(String timeStamp, String nonceStr, String orderNo) {
         String appId = hasText(payProperties.getAppId()) ? payProperties.getAppId() : "wxmock000000000000";
         return new WxPayParamsVO(appId, timeStamp, nonceStr, "prepay_id=mock_" + orderNo, "RSA", "MOCK_SIGN_" + nonceStr);

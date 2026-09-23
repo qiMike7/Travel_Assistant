@@ -4,6 +4,7 @@ import com.meta.travel.common.BusinessException;
 import com.meta.travel.common.ResultCode;
 import com.meta.travel.dto.request.ChatRequest;
 import com.meta.travel.dto.response.ChatMessageVO;
+import com.meta.travel.dto.response.ChatQuotaVO;
 import com.meta.travel.dto.response.ChatResponse;
 import com.meta.travel.dto.response.ChatSessionVO;
 import com.meta.travel.entity.ChatMessage;
@@ -22,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 对话服务（对应 chat.vue 智慧问答 / huiyuankefu.vue 会员客服）
@@ -34,10 +37,14 @@ public class ChatService {
     private static final String SYSTEM_PROMPT =
             "你是「智趣AI旅行助手」小趣，可为用户提供行程规划、景点推荐、美食介绍、旅行攻略等服务。请用简洁友好的中文回答。";
 
+    /** 非会员每日免费提问次数 */
+    private static final int FREE_DAILY_LIMIT = 5;
+
     private final ChatSessionRepository sessionRepository;
     private final ChatMessageRepository messageRepository;
     private final LlmClient llmClient;
     private final LlmProperties llmProperties;
+    private final UserService userService;
 
     /**
      * 一次对话。
@@ -45,6 +52,17 @@ public class ChatService {
      * 若包在事务内会长时间占用连接池连接；写操作交由 Repository 各自的短事务。</p>
      */
     public ChatResponse chat(Long userId, ChatRequest request, String type) {
+        boolean vip = userService.isVipActive(userService.getById(userId));
+        if ("kefu".equalsIgnoreCase(type)) {
+            // 会员客服为 VIP 专属：非会员直接抛 4292，由前端引导开通并退出
+            if (!vip) {
+                throw new BusinessException(ResultCode.MEMBER_ONLY);
+            }
+        } else if (!vip && todayQuestionCount(userId) >= FREE_DAILY_LIMIT) {
+            // 非会员的智慧问答校验今日免费额度，超出抛 4291 由前端引导开通
+            throw new BusinessException(ResultCode.CHAT_QUOTA_EXCEEDED);
+        }
+
         ChatSession session = resolveSession(userId, request.getSessionId(), type);
 
         // 保存用户提问
@@ -76,6 +94,22 @@ public class ChatService {
                 .findBySessionIdAndRoleNotOrderByIdDesc(sessionId, "system", PageRequest.of(0, limit)));
         Collections.reverse(recent);
         return recent;
+    }
+
+    /**
+     * 今日提问额度：会员不限次（vip=true）；非会员返回已用次数与每日上限。
+     */
+    @Transactional(readOnly = true)
+    public ChatQuotaVO quota(Long userId) {
+        boolean vip = userService.isVipActive(userService.getById(userId));
+        int used = (int) todayQuestionCount(userId);
+        return new ChatQuotaVO(vip, used, FREE_DAILY_LIMIT);
+    }
+
+    /** 今日（自然日）已提问次数。 */
+    private long todayQuestionCount(Long userId) {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        return messageRepository.countUserQuestionsSince(userId, startOfDay);
     }
 
     @Transactional(readOnly = true)

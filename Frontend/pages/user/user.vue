@@ -65,6 +65,10 @@
 						<image src="/static/assets/user/icons/tell.png" class="vip-image" @click="goAbout()"></image>
 						关于我们
 					</view>
+					<view @click="goPlanHistory()">
+						<image src="/static/assets/user/icons/plan-history.svg" class="vip-image"></image>
+						规划历史
+					</view>
 				</view>
 				<view class="vip-footer">
 					<image src="/static/assets/user/icons/联系我们.png" class="vip-image"></image>
@@ -80,22 +84,29 @@
 			</view>
 		</view>
 
-		<!-- Meta Tourism 文本 -->
-		<view class="meta-text">
-			<text class="meta-label">由 Meta- Tourism 自研文旅垂类语言模型支持</text>
+		<!-- 虚拟付款码面板（无法调起真实微信支付时的降级展示） -->
+		<view v-if="payCode.visible" class="paycode-mask" @tap.stop="closePayCode">
+			<view class="paycode-panel" @tap.stop>
+				<text class="paycode-title">微信扫一扫付款</text>
+				<text class="paycode-amount">¥{{ payCode.amount }}</text>
+				<canvas canvas-id="vipPayQr" id="vipPayQr" class="paycode-qr"></canvas>
+				<text class="paycode-order">订单号：{{ payCode.orderNo }}</text>
+				<text class="paycode-tip">当前为模拟器/未配置商户号环境，展示的是演示付款码</text>
+				<button class="paycode-done" @tap="finishMockPay">我已完成支付</button>
+				<text class="paycode-cancel" @tap="closePayCode">取消</text>
+			</view>
 		</view>
 	</view>
 
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, nextTick, getCurrentInstance } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import CustomNavBar from '@/components/CustomNavBar.vue'
-import { userApi, payApi } from '@/common/api/index.js'
+import { userApi } from '@/common/api/index.js'
 import { isLogin, getUser, setUser } from '@/common/utils/auth.js'
 import { toAbsoluteUrl } from '@/common/utils/request.js'
-import { invokeWxPayment } from '@/common/utils/pay.js'
 
 const user = ref(getUser() || {})
 
@@ -138,7 +149,12 @@ const VIP_PLANS = [
   { label: '月卡 ¥30（30 天）', price: 30, hours: 24 * 30 }
 ]
 
-// 开通 VIP：选择套餐 -> 微信支付 -> 支付成功后后端赠送对应时长
+// 虚拟付款码面板（与购物下单一致：无法调起真实支付时展示演示付款码）
+const instance = getCurrentInstance()
+const payCode = reactive({ visible: false, amount: '', orderNo: '' })
+let pendingPlan = null
+
+// 开通 VIP：选择套餐 -> 展示虚拟付款码 -> “我已完成支付”后按套餐时长开通
 const handleOpenVip = () => {
   if (!isLogin()) {
     uni.navigateTo({ url: '/pages/login/login' })
@@ -146,30 +162,96 @@ const handleOpenVip = () => {
   }
   uni.showActionSheet({
     itemList: VIP_PLANS.map(p => p.label),
-    success: async ({ tapIndex }) => {
+    success: ({ tapIndex }) => {
       const plan = VIP_PLANS[tapIndex]
       if (!plan) return
-      try {
-        // 1. 向后端换取微信支付参数（bizType=vip）
-        const payParams = await payApi.wechat({
-          bizType: 'vip',
-          plan: tapIndex === 0 ? 'week' : 'month',
-          amount: plan.price
-        })
-        // 2. 调起微信支付收银台
-        await invokeWxPayment({ ...(payParams || {}), amount: plan.price })
-        // 3. 支付成功：按套餐时长开通
-        const u = await userApi.grantVip(plan.hours)
-        if (u) {
-          user.value = u
-          setUser(u)
-        }
-        uni.showToast({ title: '开通成功', icon: 'success' })
-      } catch (e) {
-        // 支付取消或接口异常，错误提示已统一处理
-      }
+      pendingPlan = plan
+      openPayCode(plan)
     }
   })
+}
+
+// 展示付款码面板（当前环境无法调起微信支付时的降级方案）
+const openPayCode = (plan) => {
+  payCode.amount = Number(plan.price).toFixed(2)
+  payCode.orderNo = 'VIP' + Date.now()
+  payCode.visible = true
+  nextTick(() => drawPayQr(payCode.orderNo))
+}
+
+// 本地自绘付款二维码（演示用图案，非真实可扫描）：根据订单号确定性地生成点阵
+const drawPayQr = (seedStr) => {
+  try {
+    const SIZE = 220
+    const N = 25
+    const CELL = Math.floor(SIZE / (N + 2))
+    const OFF = Math.floor((SIZE - CELL * N) / 2)
+    const ctx = uni.createCanvasContext('vipPayQr', instance.proxy)
+    ctx.setFillStyle('#ffffff')
+    ctx.fillRect(0, 0, SIZE, SIZE)
+    // 字符串哈希，保证同一订单号图案一致
+    let h = 2166136261
+    for (let i = 0; i < seedStr.length; i++) {
+      h ^= seedStr.charCodeAt(i)
+      h = Math.imul(h, 16777619)
+    }
+    let seed = h >>> 0
+    const rand = () => {
+      seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff
+      return seed / 0x7fffffff
+    }
+    const inFinder = (x, y) =>
+      (x < 8 && y < 8) || (x >= N - 8 && y < 8) || (x < 8 && y >= N - 8)
+    ctx.setFillStyle('#111111')
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        if (inFinder(x, y)) continue
+        if (rand() > 0.5) {
+          ctx.fillRect(OFF + x * CELL, OFF + y * CELL, CELL, CELL)
+        }
+      }
+    }
+    // 三个定位角
+    const finder = (fx, fy) => {
+      const px = OFF + fx * CELL
+      const py = OFF + fy * CELL
+      ctx.setFillStyle('#111111')
+      ctx.fillRect(px, py, CELL * 7, CELL * 7)
+      ctx.setFillStyle('#ffffff')
+      ctx.fillRect(px + CELL, py + CELL, CELL * 5, CELL * 5)
+      ctx.setFillStyle('#111111')
+      ctx.fillRect(px + CELL * 2, py + CELL * 2, CELL * 3, CELL * 3)
+    }
+    finder(1, 1)
+    finder(N - 8, 1)
+    finder(1, N - 8)
+    ctx.draw()
+  } catch (e) {
+    // 绘图失败不阻断付款码展示
+  }
+}
+
+// 关闭付款码
+const closePayCode = () => {
+  payCode.visible = false
+}
+
+// “我已完成支付”：按套餐时长开通 VIP
+const finishMockPay = async () => {
+  payCode.visible = false
+  if (!pendingPlan) return
+  try {
+    const u = await userApi.grantVip(pendingPlan.hours)
+    if (u) {
+      user.value = u
+      setUser(u)
+    }
+    uni.showToast({ title: '开通成功', icon: 'success' })
+  } catch (e) {
+    // 接口异常，错误提示已统一处理
+  } finally {
+    pendingPlan = null
+  }
 }
 
 const goSettings = () => {
@@ -199,6 +281,17 @@ const goShare = () => {
 const goHuiyuan = () => {
   uni.navigateTo({
     url: '/pages/huiyuankefu/huiyuankefu'
+  });
+}
+
+// 规划历史：首页智能规划的保存记录（非会员 1 份 / 会员 5 份，删除可释放名额）
+const goPlanHistory = () => {
+  if (!isLogin()) {
+    uni.navigateTo({ url: '/pages/login/login' })
+    return
+  }
+  uni.navigateTo({
+    url: '/pages/plan-history/plan-history'
   });
 }
 
@@ -470,5 +563,81 @@ const goHuiyuan = () => {
 	font-size: 24rpx;
 	color: #666;
 	font-family: 'CustomFont', sans-serif;
+}
+
+/* 虚拟付款码面板 */
+.paycode-mask {
+	position: fixed;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.55);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 999;
+}
+
+.paycode-panel {
+	width: 560rpx;
+	background: #fff;
+	border-radius: 24rpx;
+	padding: 48rpx 40rpx 36rpx;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.paycode-title {
+	font-size: 32rpx;
+	color: #333;
+	font-weight: bold;
+}
+
+.paycode-amount {
+	font-size: 48rpx;
+	color: #ff4444;
+	font-weight: bold;
+	margin: 16rpx 0 24rpx;
+}
+
+.paycode-qr {
+	width: 220px;
+	height: 220px;
+	background: #fff;
+	border: 1rpx solid #eee;
+	border-radius: 12rpx;
+}
+
+.paycode-order {
+	font-size: 24rpx;
+	color: #666;
+	margin-top: 20rpx;
+}
+
+.paycode-tip {
+	font-size: 22rpx;
+	color: #999;
+	margin-top: 10rpx;
+	text-align: center;
+	line-height: 1.5;
+}
+
+.paycode-done {
+	margin-top: 30rpx;
+	width: 100%;
+	background: #07c160;
+	color: #fff;
+	font-size: 30rpx;
+	border-radius: 44rpx;
+	height: 80rpx;
+	line-height: 80rpx;
+}
+
+.paycode-cancel {
+	margin-top: 20rpx;
+	font-size: 28rpx;
+	color: #999;
 }
 </style>

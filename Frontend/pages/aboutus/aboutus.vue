@@ -9,15 +9,15 @@
         mode="widthFix"
       ></image>
       <view class="banner-slogan">
-        <text class="slogan-main">趣发现，定无忧</text>
-        <text class="slogan-sub">—— 您的专属海南旅行伙伴</text>
+        <text class="slogan-main">智在发现，趣享旅途</text>
+        <text class="slogan-sub">—— 您的专属中国旅行伙伴</text>
       </view>
     </view>
 
     <!-- 我们是谁 -->
     <view class="section who-we-are">
       <view class="section-title">
-        <text>认识趣定旅行</text>
+        <text>认识智趣旅行</text>
         <view class="title-line"></view>
       </view>
       
@@ -26,8 +26,8 @@
         <view class="card-item">
           <image class="card-icon" src="/static/introduction/logo.png" mode="widthFix"></image>
           <view class="card-content">
-            <text class="card-title">元旅科技 & 趣定旅行</text>
-            <text class="card-desc">元旅科技，深耕海南本土旅游市场，致力于通过科技力量，让每一位旅行者都能轻松定制充满乐趣的海南之旅。“趣定旅行”小程序，就是我们实现这一愿景的核心平台。</text>
+            <text class="card-title">智旅科技 & 智趣旅行</text>
+            <text class="card-desc">智旅科技，深耕中国旅游市场，致力于以人工智能与科技力量，让每一位旅行者都能轻松定制充满乐趣的中华之旅。“智趣旅行”小程序，就是我们实现这一愿景的核心平台。</text>
           </view>
         </view>
         
@@ -36,15 +36,15 @@
           <view class="idea-item">
             
             <view class="idea-text">
-              <text class="idea-title">趣</text>
-              <text class="idea-desc">挖掘海南鲜为人知的宝藏玩法，推荐个性化体验，让每一次旅程都充满惊喜与欢乐。</text>
+              <text class="idea-title">智</text>
+              <text class="idea-desc">提供简单易用的智能定制工具，用AI规划可靠顺畅的行程，让您安心享受假期。</text>
             </view>
           </view>
           <view class="idea-item">
            
             <view class="idea-text">
-              <text class="idea-title">定</text>
-              <text class="idea-desc">提供简单易用的定制工具，保障行程安排的可靠与顺畅，让您安心享受假期。</text>
+              <text class="idea-title">趣</text>
+              <text class="idea-desc">挖掘祖国各地鲜为人知的宝藏玩法，推荐个性化体验，让每一次旅程都充满惊喜与欢乐。</text>
             </view>
           </view>
         </view>
@@ -61,8 +61,8 @@
       <view class="story-content">
         <image class="story-img" src="/static/introduction/story.png" mode="widthFix"></image>
         <view class="story-text">
-          <text class="story-p">在海南，我们看到太多游客因行程千篇一律或规划繁琐而错过真正的乐趣。于是，“趣定旅行”诞生了——我们想用科技打破常规，让每个人都能轻松定制独一无二、充满趣味的海南探索之旅。</text>
-          <text class="story-p">作为海南本土团队，我们深谙这片热土的魅力所在。从隐秘的渔村美食到雨林深处的秘境，“趣定”连接最地道的资源，只为给您带来最“海南”的旅行体验。</text>
+          <text class="story-p">在全国各地，我们看到太多游客因行程千篇一律或规划繁琐而错过真正的乐趣。于是，“智趣旅行”诞生了——我们想用AI科技打破常规，让每个人都能轻松定制独一无二、充满趣味的中华探索之旅。</text>
+          <text class="story-p">我们深谙这片辽阔土地的魅力所在。从江南水乡到西北大漠，从海滨渔村到雪山秘境，“智趣”连接最地道的资源，只为给您带来最懂你的旅行体验。</text>
         </view>
       </view>
     </view>
@@ -70,7 +70,7 @@
     <!-- 我们的优势 -->
     <view class="section our-strengths">
       <view class="section-title">
-        <text>选择趣定的理由</text>
+        <text>选择智趣的理由</text>
         <view class="title-line"></view>
       </view>
       
@@ -78,7 +78,7 @@
         <!-- 优势1 -->
         <view class="strength-card">
           <image class="strength-icon" src="/static/introduction/resource.png" mode="widthFix"></image>
-          <text class="strength-title">深度海南资源</text>
+          <text class="strength-title">深度全国资源</text>
           <text class="strength-desc">地道体验，独家合作</text>
         </view>
         
@@ -99,33 +99,11 @@
         <!-- 优势4 -->
         <view class="strength-card">
           <image class="strength-icon" src="/static/introduction/service.png" mode="widthFix"></image>
-          <text class="strength-title">本土贴心服务</text>
-          <text class="strength-desc">海南在地团队，更懂你的需求</text>
+          <text class="strength-title">贴心全域服务</text>
+          <text class="strength-desc">走遍中国，更懂你的需求</text>
         </view>
       </view>
     </view>
-
-    <!-- 遇见团队 -->
-    <view class="section meet-team">
-      <view class="section-title">
-        <text>背后的我们</text>
-        <view class="title-line"></view>
-      </view>
-      
-      <!-- 核心成员 -->
-      <view class="core-members">
-        <view class="member-card" v-for="(member, index) in members" :key="index">
-          <image class="member-avatar" :src="member.avatar" mode="widthFix"></image>
-          <text class="member-name">{{ member.name }}</text>
-          <text class="member-title">{{ member.title }}</text>
-          <text class="member-slogan">“{{ member.slogan }}”</text>
-        </view>
-      </view>
-	  <!-- 团队风采 -->
-	    
-	</view>
-      
-      
 
     <!-- 联系与合作 -->
     <view class="section contact-us">
@@ -138,11 +116,11 @@
         <view class="contact-user">
           <text class="contact-title">用户服务</text>
           <view class="contact-methods">
-            <button class="contact-btn" hover-class="btn-hover">
+            <button class="contact-btn" hover-class="btn-hover" @click="showServicePhone">
               <image class="method-icon" src="/static/introduction/15电话.png" mode="widthFix"></image>
               <text>客服电话</text>
             </button>
-            <button class="contact-btn" hover-class="btn-hover">
+            <button class="contact-btn" hover-class="btn-hover" @click="openQrPopup('在线客服')">
               <image class="method-icon" src="/static/introduction/对话.png" mode="widthFix"></image>
               <text>在线客服</text>
             </button>
@@ -151,18 +129,29 @@
         
         <view class="contact-coop">
           <text class="contact-title">商务合作</text>
-          <button class="coop-btn" hover-class="btn-hover">
+          <button class="coop-btn" hover-class="btn-hover" @click="openQrPopup('旅游资源合作')">
             <image class="method-icon" src="/static/introduction/合作.png" mode="widthFix"></image>
             <text>旅游资源合作入口</text>
           </button>
         </view>
       </view>
     </view>
+
+    <!-- 微信二维码弹窗 -->
+    <view class="qr-mask" v-if="qrPopupVisible" @click="closeQrPopup">
+      <view class="qr-popup" @click.stop>
+        <text class="qr-popup-title">{{ qrPopupTitle }}</text>
+        <text class="qr-popup-tip">请添加微信好友，长按识别或截图后在微信中扫码</text>
+        <image class="qr-popup-img" src="/static/settings/profile/qrcode.png" mode="widthFix"></image>
+        <button class="qr-popup-close" hover-class="btn-hover" @click="closeQrPopup">关闭</button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-// 团队成员数据
+// 页面交互逻辑
+import { ref } from 'vue'
 import CustomNavBar from '@/components/CustomNavBar.vue'
 
 const handleBack = () => {
@@ -171,26 +160,28 @@ const handleBack = () => {
 	});
 }
 
-const members = [
-  {
-    avatar: '/static/images/member1.jpg',
-    name: '',
-    title: '创始人 & CEO',
-    slogan: '让科技温暖每一次海南相遇'
-  },
-  {
-    avatar: '/static/images/member2.jpg',
-    name: '',
-    title: '产品负责人',
-    slogan: '把海南的乐趣藏进每一个定制细节里'
-  },
-  {
-    avatar: '/static/images/member3.jpg',
-    name: '',
-    title: '本地资源总监',
-    slogan: '带你吃遍渔村，玩透雨林'
-  }
-]
+// 客服电话弹窗
+const showServicePhone = () => {
+	uni.showModal({
+		title: '客服电话',
+		content: '188888888',
+		showCancel: false,
+		confirmText: '知道了'
+	});
+}
+
+// 微信二维码弹窗（模拟添加好友）
+const qrPopupVisible = ref(false)
+const qrPopupTitle = ref('')
+
+const openQrPopup = (title) => {
+	qrPopupTitle.value = title
+	qrPopupVisible.value = true
+}
+
+const closeQrPopup = () => {
+	qrPopupVisible.value = false
+}
 </script>
 
 <style scoped>
@@ -383,66 +374,6 @@ const members = [
   color: #666;
 }
 
-/* 遇见团队样式 */
-.meet-team {
-  background-color: #fff8e1; /* 阳光黄浅背景 */
-}
-.core-members {
-  display: flex;
-  gap: 20rpx;
-  overflow-x: auto;
-  padding-bottom: 15rpx;
-  margin-bottom: 30rpx;
-}
-.member-card {
-  min-width: 220rpx;
-  background-color: white;
-  padding: 20rpx;
-  border-radius: 15rpx;
-  text-align: center;
-  box-shadow: 0 4rpx 8rpx rgba(0,0,0,0.05);
-}
-.member-avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  margin: 0 auto 15rpx;
-  border: 4rpx solid #FFC107; /* 阳光黄边框 */
-}
-.member-name {
-  font-size: 28rpx;
-  font-weight: bold;
-  color: #333;
-  display: block;
-}
-.member-title {
-  font-size: 22rpx;
-  color: #666;
-  display: block;
-  margin: 5rpx 0 10rpx;
-}
-.member-slogan {
-  font-size: 22rpx;
-  color: #e67e22;
-  font-style: italic;
-}
-.team-desc {
-  font-size: 26rpx;
-  color: #333;
-  text-align: center;
-  margin-bottom: 20rpx;
-  display: block;
-}
-.moments-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15rpx;
-}
-.moment-img {
-  width: 100%;
-  border-radius: 10rpx;
-}
-
 /* 联系与合作样式 */
 .contact-us {
   background-color: white;
@@ -496,5 +427,53 @@ const members = [
 .btn-hover {
   opacity: 0.8;
   transform: scale(0.98);
+}
+
+/* 微信二维码弹窗样式 */
+.qr-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.qr-popup {
+  width: 560rpx;
+  background-color: white;
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.qr-popup-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+.qr-popup-tip {
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+.qr-popup-img {
+  width: 360rpx;
+  border-radius: 12rpx;
+  margin-bottom: 30rpx;
+}
+.qr-popup-close {
+  width: 300rpx;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 50rpx;
+  padding: 12rpx 0;
+  font-size: 28rpx;
 }
 </style>

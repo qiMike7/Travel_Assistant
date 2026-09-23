@@ -29,13 +29,6 @@
 			}
 		},
 		{
-			"path" : "pages/map-test/map-test",
-			"style" : 
-			{
-				"navigationBarTitleText" : ""
-			}
-		},
-		{
 			"path" : "pages/chat/chat",
 			"style" : 
 			{
@@ -110,6 +103,14 @@
 			}
 		},
 		{
+			"path" : "pages/album/album",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path" : "pages/shopping/shopping",
 			"style" : 
 			{
@@ -131,6 +132,14 @@
 				"navigationBarTitleText" : "",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path" : "pages/plan-history/plan-history",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
 		}
 	],
 	"globalStyle": {
@@ -147,6 +156,11 @@
 				"iconPath": "/static/tabbar/home.png",
 				"selectedIconPath": "/static/tabbar/home-selected.png",
 				"text": "首页"
+			},{
+				"pagePath": "pages/album/album",
+				"iconPath": "/static/tabbar/album.png",
+				"selectedIconPath": "/static/tabbar/album-selected.png",
+				"text": "相册"
 			},{
 				"pagePath": "pages/guide/guide",
 				"iconPath": "/static/tabbar/search.png",

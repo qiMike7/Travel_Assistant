@@ -8,9 +8,11 @@ import com.meta.travel.security.PublicApi;
 import com.meta.travel.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -33,5 +35,14 @@ public class AuthController {
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return Result.success("登录成功", authService.login(request));
+    }
+
+    /**
+     * 用户名可用性实时查询：data 为 true 表示未被占用，可注册
+     */
+    @PublicApi
+    @GetMapping("/check-username")
+    public Result<Boolean> checkUsername(@RequestParam String username) {
+        return Result.success(authService.isUsernameAvailable(username));
     }
 }

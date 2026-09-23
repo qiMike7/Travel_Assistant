@@ -7,7 +7,9 @@ import { http, uploadFile, LLM_TIMEOUT } from '../utils/request.js'
 /* ---------------- 认证 ---------------- */
 export const authApi = {
 	register: (data) => http.post('/api/auth/register', data),
-	login: (data) => http.post('/api/auth/login', data)
+	login: (data) => http.post('/api/auth/login', data),
+	// 用户名可用性实时查询：resolve(true) 表示未被占用
+	checkUsername: (username) => http.get('/api/auth/check-username', { username })
 }
 
 /* ---------------- 用户 / 个人资料 ---------------- */
@@ -42,7 +44,9 @@ export const orderApi = {
 export const payApi = {
 	// 发起微信支付：后端下单并返回调起收银台所需参数
 	// 返回体：{ timeStamp, nonceStr, package, signType, paySign, ... }
-	wechat: (data) => http.post('/api/payments/wxpay', data)
+	wechat: (data) => http.post('/api/payments/wxpay', data),
+	// 支付成功确认：wx.requestPayment 成功（或完成付款码面板）后调用，后端把订单推进为已付款
+	confirm: (data) => http.post('/api/payments/confirm', data)
 }
 
 /* ---------------- 旅行相册 ---------------- */
@@ -54,12 +58,6 @@ export const albumApi = {
 	remove: (id) => http.del('/api/albums/' + id)
 }
 
-/* ---------------- 地图路线 ---------------- */
-export const routeApi = {
-	list: () => http.get('/api/routes'),
-	detail: (id) => http.get('/api/routes/' + id)
-}
-
 /* ---------------- AI 对话（后端代理大模型） ---------------- */
 export const chatApi = {
 	// 智慧问答：chat.vue
@@ -68,7 +66,23 @@ export const chatApi = {
 	kefu: (data) => http.post('/api/kefu/chat', data, { timeout: LLM_TIMEOUT }),
 	sessions: () => http.get('/api/chat/sessions'),
 	messages: (sessionId) => http.get('/api/chat/sessions/' + sessionId + '/messages'),
-	removeSession: (sessionId) => http.del('/api/chat/sessions/' + sessionId)
+	removeSession: (sessionId) => http.del('/api/chat/sessions/' + sessionId),
+	// 今日提问额度（非会员每日限 5 次）：{ vip, used, limit }
+	quota: () => http.get('/api/chat/quota')
+}
+
+/* ---------------- 旅行攻略规划（后端代理大模型） ---------------- */
+export const planApi = {
+	// 快速智慧旅行攻略规划：shopping.vue（仅生成不保存，是否存入历史由用户点击「保存到规划历史」决定）
+	generate: (data) => http.post('/api/itinerary', data, { showLoading: false, timeout: LLM_TIMEOUT }),
+	// 显式保存一份攻略到规划历史（名额校验在此步：非会员 1 份 / 会员 5 份，满额返回 4293）
+	save: (data) => http.post('/api/itinerary/save', data),
+	// 规划历史列表（user.vue → plan-history.vue）
+	list: () => http.get('/api/itinerary'),
+	// 单份攻略详情（完整 ItineraryVO，含 id）
+	detail: (id) => http.get('/api/itinerary/' + id),
+	// 删除一份攻略（释放保存名额）
+	remove: (id) => http.del('/api/itinerary/' + id)
 }
 
 /* ---------------- 文件上传 ---------------- */
